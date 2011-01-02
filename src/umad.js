@@ -2,30 +2,69 @@
 /*global UMAD: true, jQuery:false, document:false, window:false*/
 
 var UMAD = (function ($) {
-	var uix, Io;
+	var Io = function (moduleName) {
+		this.whoAmI = function () {
+			return moduleName;
+		};
+	};
 
-	uix = (function () {
-		var registry = {},
-			whitespace = /\s+/g,
-			smash = function (s) {
-				return s.replace(whitespace, ' ').split(' ');
-			},
-			findWidget = function (target, cssClass) {
-				var t = $(target);
-				if (t.hasClass(cssClass)) {
-					return t;
-				}
-				return t.closest('.' + cssClass);
-			},
-			filter = function (triggerClass, func) {
-				return function (el, evt) {
-					if ($(evt.target).hasClass(triggerClass)) {
-						func(el, evt);
+	(function () {
+		var events = {},
+			console = window.console || {},
+			consoleFunctions = ['log', 'warn', 'error'],
+			i,
+			makeFunc = function (type) {
+				return function () {
+					var args;
+					if (console[type]) {
+						args = Array.prototype.slice.call(arguments);
+						args.unshift('[' + this.whoAmI() + ']');
+						console[type].apply(console, args);
 					}
 				};
 			};
-		return {
-			bind: function (type, cssClass, func) {
+		Io.prototype.notify = function (type, data) {
+			var list, i;
+			list = events[type] || [];
+			for (i = list.length; i--;) {
+				list[i].handler.call(list[i].context, type, data);
+			}
+		};
+		Io.prototype.listen = function (listenTo, handler, context) {
+			var i, e;
+			console.log(this);
+			for (i = listenTo.length; i--;) {
+				e = listenTo[i];
+				events[e] = events[e] || [];
+				events[e].push({
+					handler: handler,
+					context: context,
+					from: this.whoAmI()
+				});
+			}
+		};
+		// UIX
+		Io.prototype.bind = (function () {
+			var registry = {},
+				whitespace = /\s+/g,
+				smash = function (s) {
+					return s.replace(whitespace, ' ').split(' ');
+				},
+				findWidget = function (target, cssClass) {
+					var t = $(target);
+					if (t.hasClass(cssClass)) {
+						return t;
+					}
+					return t.closest('.' + cssClass);
+				},
+				filter = function (triggerClass, func) {
+					return function (el, evt) {
+						if ($(evt.target).hasClass(triggerClass)) {
+							func(el, evt);
+						}
+					};
+				};
+			return function (type, cssClass, func) {
 				var reg = registry, types, classes, i, t;
 				// add a handler if there isn't one for this type
 				if (!(type in registry)) {
@@ -53,51 +92,8 @@ var UMAD = (function ($) {
 						reg[t][cssClass] = func;
 					}
 				}
-			}
-		};
-	}());
-
-	(function () {
-		var events = {},
-			console = window.console || {},
-			consoleFunctions = ['log', 'warn', 'error'],
-			i,
-			makeFunc = function (type) {
-				return function () {
-					var args;
-					if (console[type]) {
-						args = Array.prototype.slice.call(arguments);
-						args.unshift('[' + this.whoAmI() + ']');
-						console[type].apply(console, args);
-					}
-				};
 			};
-		Io = function (moduleName) {
-			this.whoAmI = function () {
-				return moduleName;
-			};
-		};
-		Io.prototype.notify = function (type, data) {
-			var list, i;
-			list = events[type] || [];
-			for (i = list.length; i--;) {
-				list[i].handler.call(list[i].context, type, data);
-			}
-		};
-		Io.prototype.listen = function (listenTo, handler, context) {
-			var i, e;
-			console.log(this);
-			for (i = listenTo.length; i--;) {
-				e = listenTo[i];
-				events[e] = events[e] || [];
-				events[e].push({
-					handler: handler,
-					context: context,
-					from: this.whoAmI()
-				});
-			}
-		};
-		Io.prototype.bind = uix.bind;
+		}());
 		for (i = consoleFunctions.length; i--;) {
 			Io.prototype[consoleFunctions[i]] = makeFunc(consoleFunctions[i]);
 		}
@@ -107,7 +103,10 @@ var UMAD = (function ($) {
 		var moduleData = {},
 			moduleOptions = {},
 			start = function (moduleId) {
-				var mod = moduleData[moduleId], options = moduleOptions[moduleId], i, moduleIo = new Io(moduleId);
+				var mod = moduleData[moduleId],
+					options = moduleOptions[moduleId],
+					i,
+					moduleIo = new Io(moduleId);
 				try {
 					mod.instance = mod.maker($, moduleIo) || {};
 					if (mod.instance.init) {
