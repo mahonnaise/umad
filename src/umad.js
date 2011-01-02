@@ -132,8 +132,7 @@ var UMAD = (function ($) {
 			};
 		// start all
 		$(document).ready(function () {
-			var moduleId;
-			for (moduleId in moduleData) {
+			for (var moduleId in moduleData) {
 				if (moduleData.hasOwnProperty(moduleId)) {
 					start(moduleId);
 				}
@@ -141,8 +140,7 @@ var UMAD = (function ($) {
 		});
 		// stop all
 		$(window).unload(function () {
-			var moduleId;
-			for (moduleId in moduleData) {
+			for (var moduleId in moduleData) {
 				if (moduleData.hasOwnProperty(moduleId)) {
 					stop(moduleId);
 				}
