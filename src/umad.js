@@ -64,32 +64,34 @@ var UMAD = (function ($) {
 						}
 					};
 				};
-			return function (type, cssClass, func) {
-				var reg = registry, types, classes, i, t;
-				// add a handler if there isn't one for this type
-				if (!(type in registry)) {
-					$(document).bind(type, function (evt) {
-						var actions, el, cssClass;
-						actions = registry[evt.type];
-						for (cssClass in actions) {
-							if (actions.hasOwnProperty(cssClass)) {
-								el = findWidget(evt.target, cssClass);
-								if (el.length) {
-									actions[cssClass](el, evt);
-								}
-							}
-						}
-					});
-				}
-				types = smash(type);
+			return function (allTypes, cssClass, func) {
+				var reg = registry, types, classes, i, type;
+				types = smash(allTypes);
 				classes = smash(cssClass);
 				for (i = types.length; i--;) {
-					t = types[i];
-					reg[t] = reg[t] || {};
+					type = types[i];
+
+					// add a handler if there isn't one for this type
+					if (!registry[type]) {
+						$(document).bind(type, function (evt) {
+							var actions, el, cssClass;
+							actions = registry[evt.type];
+							for (cssClass in actions) {
+								if (actions.hasOwnProperty(cssClass)) {
+									el = findWidget(evt.target, cssClass);
+									if (el.length) {
+										actions[cssClass](el, evt);
+									}
+								}
+							}
+						});
+					}
+
+					reg[type] = reg[type] || {};
 					if (classes.length > 1) {
-						reg[t][classes[0]] = filter(classes[1], func);
+						reg[type][classes[0]] = filter(classes[1], func);
 					} else {
-						reg[t][cssClass] = func;
+						reg[type][cssClass] = func;
 					}
 				}
 			};
